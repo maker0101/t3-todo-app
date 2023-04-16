@@ -11,8 +11,13 @@ datasource db {
   relationMode = "prisma"
 }
 
-model Example {
+model Todo {
     id        String   @id @default(cuid())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+    title   String
+    userId  String
+    isDone  Boolean @default(false)
+
+    @@index([userId])
 }
