@@ -36,10 +36,16 @@ const Home: NextPage = () => {
                 key={todo.id}
               >
                 <input
+                  id={`checkbox-${todo.id}`}
                   type="checkbox"
                   className="h-5 w-5 rounded border-gray-600 bg-transparent"
                 />
-                <label className="text-gray-300">{todo.title}</label>
+                <label
+                  htmlFor={`checkbox-${todo.id}`}
+                  className="text-gray-300"
+                >
+                  {todo.title}
+                </label>
               </div>
             ))}
           </div>
