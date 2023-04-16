@@ -1,4 +1,5 @@
 import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { type NextPage } from "next";
 import Head from "next/head";
 import { api } from "~/utils/api";
@@ -7,6 +8,8 @@ import { api } from "~/utils/api";
 
 const Home: NextPage = () => {
   const user = useUser();
+
+  const [animationParent] = useAutoAnimate();
 
   const { data: todos } = api.todos.getAll.useQuery();
   console.log(todos);
@@ -29,20 +32,23 @@ const Home: NextPage = () => {
           </nav>
           <div className="h-1/5"></div>
           <h1 className="text-3xl font-bold text-gray-500">Today</h1>
-          <div className="mt-8 flex h-full flex-col gap-2">
+          <div
+            className="mt-8 flex h-full flex-col gap-2"
+            ref={animationParent}
+          >
             {todos?.map((todo) => (
               <div
-                className="flex min-h-[48px] w-full items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
+                className="flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
                 key={todo.id}
               >
                 <input
                   id={`checkbox-${todo.id}`}
                   type="checkbox"
-                  className="h-5 w-5 rounded border-gray-600 bg-transparent"
+                  className="h-5 w-5 cursor-pointer rounded  border-gray-600 bg-transparent"
                 />
                 <label
                   htmlFor={`checkbox-${todo.id}`}
-                  className="text-gray-300"
+                  className="cursor-pointer select-none text-gray-300"
                 >
                   {todo.title}
                 </label>
