@@ -99,7 +99,7 @@ const TodoList: React.FC<TodoListType> = (props) => {
       <div className="h-8" />
       <div className="flex h-full flex-col gap-2" ref={animationParent}>
         {todos?.map((todo) => (
-          <form
+          <button
             className="flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
             key={todo.id}
           >
@@ -112,16 +112,17 @@ const TodoList: React.FC<TodoListType> = (props) => {
               value={todo.title}
               className="w-full cursor-pointer select-none truncate bg-transparent text-gray-300 outline-none focus:text-gray-100"
             />
-          </form>
+          </button>
         ))}
-        <form className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg border border-dashed border-gray-800 px-4 hover:border-gray-700 hover:bg-gray-950">
+
+        <form className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg px-4 hover:bg-gray-950">
           <input
             id={`checkbox-new-todo`}
             type="checkbox"
-            className="h-5 w-5 cursor-pointer rounded border-dashed border-gray-800 bg-transparent focus:ring-transparent  group-hover:border-gray-700"
+            className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent  group-hover:border-gray-700"
           />
           <input
-            className="w-full cursor-pointer select-none truncate bg-transparent text-gray-100 outline-none placeholder:text-gray-700"
+            className="w-full cursor-pointer select-none truncate bg-transparent text-gray-100 outline-none placeholder:text-gray-700 group-hover:placeholder:text-gray-600"
             placeholder="Add Todo"
           />
         </form>

@@ -1,14 +1,23 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, privateProcedure } from "~/server/api/trpc";
 
 export const todosRouter = createTRPCRouter({
   // TODO: change to protectedProcedure
   // TODO: filter by userId
-  getAll: publicProcedure.query(({ ctx }) => {
-    return ctx.prisma.todo.findMany();
+  getAll: privateProcedure.query(({ ctx }) => {
+    return ctx.prisma.todo.findMany({
+      // where: {
+      //   userId:
+      // }
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
   }),
   // TODO: change to protectedProcedure
-  // create: publicProcedure.input({todo: }).mutation((ctx) => {
-  //   return
-  // })
+  create: privateProcedure
+    .input(z.object({ title: z.string(), isDone: z.boolean() }))
+    .mutation((ctx) => {
+      return;
+    }),
 });
