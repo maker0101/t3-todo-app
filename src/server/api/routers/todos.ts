@@ -1,4 +1,4 @@
-import { z } from "zod";
+// import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "~/server/api/trpc";
 
 export const todosRouter = createTRPCRouter({
@@ -15,9 +15,9 @@ export const todosRouter = createTRPCRouter({
     });
   }),
   // TODO: change to protectedProcedure
-  create: privateProcedure
-    .input(z.object({ title: z.string(), isDone: z.boolean() }))
-    .mutation((ctx) => {
-      return;
-    }),
+  // create: privateProcedure
+  //   .input(z.object({ title: z.string(), isDone: z.boolean() }))
+  //   .mutation((ctx) => {
+  //     return;
+  //   }),
 });
