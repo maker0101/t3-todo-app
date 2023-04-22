@@ -37,7 +37,9 @@ const Home: NextPage = () => {
             </nav>
             <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center">
               {isTodoListLoading && <TodoListLoading numberOfItems={3} />}
-              {!todos && <TodoListError reload={reload} />}
+              {!isTodoListLoading && !todos && (
+                <TodoListError reload={reload} />
+              )}
               {todos && (
                 <TodoList>
                   {todos.map((todo) => (
