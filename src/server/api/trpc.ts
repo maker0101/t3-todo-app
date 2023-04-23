@@ -29,6 +29,11 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
   const session = getAuth(req);
   const userId = session.userId;
 
+  // TODO: getAuth is throwing an error
+  // Error: tRPC failed on <no-path>: You need to use "withClerkMiddleware" in your Next.js middleware file.
+  const session = getAuth(req);
+  console.log(session);
+
   return {
     prisma,
     userId,
