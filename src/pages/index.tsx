@@ -3,16 +3,48 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { type Todo } from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
-import { type ReactNode } from "react";
+import { type FormEvent, useState } from "react";
 import { api } from "~/utils/api";
+import { TrashIcon } from "@heroicons/react/24/solid";
 
 const Home: NextPage = () => {
+  // Auth
+  const { isSignedIn, isLoaded: isUserLoaded } = useUser();
+
+  // For reload page button in TodoListError
   const router = useRouter();
   const reload = () => router.reload();
 
-  const { isSignedIn, isLoaded: isUserLoaded } = useUser();
+  // Animations
+  const [animationParent] = useAutoAnimate();
+
+  // Get all todos
   const { data: todos, isLoading: isTodoListLoading } =
     api.todos.getAll.useQuery();
+
+  // Delete todo
+
+  // Add todos
+  const ctx = api.useContext();
+  const { mutate: addTodo, isLoading: isAddingTodo } =
+    api.todos.create.useMutation({
+      onSuccess: () => {
+        // TODO: Better way to do this without void?
+        void ctx.todos.getAll.invalidate();
+      },
+    });
+
+  const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
+
+  const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    addTodo(newTodo);
+    setNewTodo(INITIAL_NEW_TODO);
+  };
+
+  const [newTitleFocused, setNewTitleFocused] = useState(false);
+  const handleNewTitleFocus = () => setNewTitleFocused(true);
+  const handleNewTitleBlur = () => setNewTitleFocused(false);
 
   return (
     <>
@@ -31,22 +63,70 @@ const Home: NextPage = () => {
           </div>
         )}
         {isSignedIn && (
-          <div className="relative h-full w-full overflow-hidden">
-            <nav className="absolute flex h-20 w-full justify-center text-gray-600 ">
+          <div className="relative h-full w-full">
+            <nav className="flex h-20 w-full justify-center text-gray-600 ">
               <SignOutButton />
             </nav>
-            <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center">
-              {isTodoListLoading && <TodoListLoading numberOfItems={3} />}
+            {/** TodoList */}
+            <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center py-12">
+              {todos && (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-600">Todos</h1>
+                  <div className="h-8" />
+                  <div
+                    className="flex h-full flex-col gap-2"
+                    ref={animationParent}
+                  >
+                    {/** Display list of todos */}
+                    {todos.map((todo) => (
+                      <TodoItem key={todo.id} todo={todo} />
+                    ))}
+
+                    {/** AddTodoWizard */}
+                    <form
+                      className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg px-4 hover:bg-gray-950"
+                      onSubmit={(e) => handleAddTodo(e)}
+                    >
+                      <input
+                        id={`checkbox-new-todo`}
+                        type="checkbox"
+                        checked={newTodo.isDone}
+                        onChange={(e) =>
+                          setNewTodo({ ...newTodo, isDone: e.target.checked })
+                        }
+                        disabled={isAddingTodo}
+                        className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent group-hover:border-gray-700"
+                      />
+                      <input
+                        className="w-full cursor-pointer select-none truncate border-transparent bg-transparent text-gray-100 outline-none placeholder:text-gray-700 focus:border-transparent focus:ring-transparent group-hover:placeholder:text-gray-600"
+                        type="text"
+                        value={newTodo.title}
+                        onChange={(e) =>
+                          setNewTodo({ ...newTodo, title: e.target.value })
+                        }
+                        onFocus={handleNewTitleFocus}
+                        onBlur={handleNewTitleBlur}
+                        disabled={isAddingTodo}
+                        placeholder="Add Todo"
+                      />
+                      <input
+                        type="submit"
+                        value="Add"
+                        className={`${
+                          newTitleFocused ? "visible" : "invisible"
+                        } cursor-pointer rounded bg-[#2563EB] px-2 py-1 duration-100 ease-in-out`}
+                      />
+                    </form>
+                  </div>
+                </>
+              )}
+
+              {/** Todos list loading state */}
+              {isTodoListLoading && <TodoListLoading numberOfItems={4} />}
+
+              {/** Todos list error state */}
               {!isTodoListLoading && !todos && (
                 <TodoListError reload={reload} />
-              )}
-              {todos && (
-                <TodoList>
-                  {todos.map((todo) => (
-                    <TodoItem key={todo.id} todo={todo} />
-                  ))}
-                  <AddTodoWizard addTodo={() => console.log("Add todo")} />
-                </TodoList>
               )}
             </div>
           </div>
@@ -109,28 +189,6 @@ const TodoListError: React.FC<TodoListErrorProps> = (props) => {
 };
 
 /**
- * TodoList
- */
-type TodoListProps = {
-  children: ReactNode;
-};
-
-const TodoList: React.FC<TodoListProps> = (props) => {
-  const { children } = props;
-  const [animationParent] = useAutoAnimate();
-
-  return (
-    <>
-      <h1 className="text-3xl font-bold text-gray-600">Todos</h1>
-      <div className="h-8" />
-      <div className="flex h-full flex-col gap-2" ref={animationParent}>
-        {children}
-      </div>
-    </>
-  );
-};
-
-/**
  * Todo
  */
 type TodoItemProps = {
@@ -138,51 +196,37 @@ type TodoItemProps = {
 };
 
 const TodoItem: React.FC<TodoItemProps> = (props) => {
-  const {
-    todo: { id, title },
-  } = props;
+  const { todo } = props;
+  const [todoState, setTodoState] = useState(todo);
   return (
     <button
-      className="flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
-      key={id}
+      className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
+      key={todo.id}
     >
       <input
-        id={`checkbox-${id}`}
+        id={`checkbox-${todo.id}`}
         type="checkbox"
+        checked={todoState.isDone}
+        onChange={(e) =>
+          setTodoState({ ...todoState, isDone: e.target.checked })
+        }
         className="h-5 w-5 cursor-pointer rounded border-gray-600 bg-transparent focus:ring-transparent"
       />
       <input
-        value={title}
+        value={todoState.title}
+        onChange={(e) => setTodoState({ ...todoState, title: e.target.value })}
         className="w-full cursor-pointer select-none truncate bg-transparent text-gray-300 outline-none focus:text-gray-100"
       />
+      <TrashIcon className="invisible h-6 w-6 text-gray-600 group-hover:visible" />
     </button>
   );
 };
 
 /**
- * AddTodoWizard
+ * Helper
  */
 
-type AddTodoWizardProps = {
-  addTodo: () => void;
-};
-
-const AddTodoWizard: React.FC<AddTodoWizardProps> = (props) => {
-  const { addTodo } = props;
-  return (
-    <form
-      className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg px-4 hover:bg-gray-950"
-      onSubmit={addTodo}
-    >
-      <input
-        id={`checkbox-new-todo`}
-        type="checkbox"
-        className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent group-hover:border-gray-700"
-      />
-      <input
-        className="w-full cursor-pointer select-none truncate bg-transparent text-gray-100 outline-none placeholder:text-gray-700 group-hover:placeholder:text-gray-600"
-        placeholder="Add Todo"
-      />
-    </form>
-  );
+const INITIAL_NEW_TODO = {
+  title: "",
+  isDone: false,
 };

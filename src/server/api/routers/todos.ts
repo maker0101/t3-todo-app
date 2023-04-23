@@ -2,8 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "~/server/api/trpc";
 
 export const todosRouter = createTRPCRouter({
-  // TODO: change to protectedProcedure
-  // TODO: filter by userId
   getAll: privateProcedure.query(({ ctx }) => {
     return ctx.prisma.todo.findMany({
       where: {
@@ -30,4 +28,12 @@ export const todosRouter = createTRPCRouter({
       });
       return todo;
     }),
+  // delete: privateProcedure.input(todoId: z.string()).mutation(async({ctx, input}) => {
+  //   const todo = ctx.prisma.todo.delete({
+  //     where: {
+  //       id: input.todoId,
+  //       userId: ctx.userId,
+  //     }
+  //   })
+  // })
 });
