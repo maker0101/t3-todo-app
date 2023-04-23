@@ -34,6 +34,8 @@ const Home: NextPage = () => {
       },
     });
 
+  const [showAddButton, setShowAddButton] = useState(false);
+
   const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
 
   const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
@@ -41,10 +43,6 @@ const Home: NextPage = () => {
     addTodo(newTodo);
     setNewTodo(INITIAL_NEW_TODO);
   };
-
-  const [newTitleFocused, setNewTitleFocused] = useState(false);
-  const handleNewTitleFocus = () => setNewTitleFocused(true);
-  const handleNewTitleBlur = () => setNewTitleFocused(false);
 
   return (
     <>
@@ -104,8 +102,8 @@ const Home: NextPage = () => {
                         onChange={(e) =>
                           setNewTodo({ ...newTodo, title: e.target.value })
                         }
-                        onFocus={handleNewTitleFocus}
-                        onBlur={handleNewTitleBlur}
+                        onFocus={() => setShowAddButton(true)}
+                        onBlur={() => setShowAddButton(false)}
                         disabled={isAddingTodo}
                         placeholder="Add Todo"
                       />
@@ -113,7 +111,7 @@ const Home: NextPage = () => {
                         type="submit"
                         value="Add"
                         className={`${
-                          newTitleFocused ? "visible" : "invisible"
+                          showAddButton ? "visible" : "invisible"
                         } cursor-pointer rounded bg-[#2563EB] px-2 py-1 duration-100 ease-in-out`}
                       />
                     </form>
@@ -217,7 +215,7 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
         onChange={(e) => setTodoState({ ...todoState, title: e.target.value })}
         className="w-full cursor-pointer select-none truncate bg-transparent text-gray-300 outline-none focus:text-gray-100"
       />
-      <TrashIcon className="invisible h-6 w-6 text-gray-600 group-hover:visible" />
+      <TrashIcon className="invisible h-6 w-6 text-gray-700 hover:text-gray-400 group-hover:visible" />
     </button>
   );
 };
