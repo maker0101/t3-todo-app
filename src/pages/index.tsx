@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { type FormEvent, useState } from "react";
 import { api } from "~/utils/api";
 import { TrashIcon } from "@heroicons/react/24/solid";
+import { toast } from "react-hot-toast";
 
 const Home: NextPage = () => {
   // Auth
@@ -27,6 +28,9 @@ const Home: NextPage = () => {
     onSuccess: () => {
       void ctx.todos.getAll.invalidate();
     },
+    onError: () => {
+      toast.error("Failed to delete todo. Please try again.");
+    },
   });
 
   // Add todos
@@ -37,10 +41,22 @@ const Home: NextPage = () => {
         // TODO: Better way to do this without void?
         void ctx.todos.getAll.invalidate();
       },
+      onError: () => {
+        toast.error("Failed to add todo. Please try again.");
+      },
     });
 
   // Update todos
-  const { mutate: updateTodo } = api.todos.update.useMutation();
+  const { mutate: updateTodo } = api.todos.update.useMutation({
+    onError: (e) => {
+      const errorMessage = e.message;
+      if (errorMessage) {
+        toast.error(errorMessage);
+      } else {
+        toast.error("Failed to update todo. Please try again.");
+      }
+    },
+  });
 
   const [showAddButton, setShowAddButton] = useState(false);
 
@@ -212,7 +228,7 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
   const { todo, deleteTodo, updateTodo } = props;
   const [todoState, setTodoState] = useState(todo);
 
-  // TODO: Not working. Why?
+  // Todo: does this belong here? Or outside?
   const handleUpdateTodo = (
     e: FormEvent<HTMLFormElement>,
     todoId: string,
@@ -220,6 +236,12 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
   ) => {
     e.preventDefault();
     updateTodo({ todoId, newTodo });
+
+    // Blur all input fields
+    const inputs = e.currentTarget.getElementsByTagName("input");
+    for (let i = 0; i < inputs.length; i++) {
+      inputs[i]?.blur();
+    }
   };
 
   return (

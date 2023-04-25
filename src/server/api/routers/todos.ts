@@ -53,40 +53,15 @@ export const todosRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "Can't update todo. Todo not found.",
         });
-      } else if (todo.id !== ctx.userId) {
+      } else if (todo.userId !== ctx.userId) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: "Not authorized to delete the todo",
+          message: "Not authorized to update the todo",
         });
       } else {
         const newTodo = await ctx.prisma.todo.update({
           where: { id: input.todoId },
           data: { title: input.newTodo.title, isDone: input.newTodo.isDone },
-        });
-        return newTodo;
-      }
-    }),
-  updateTitle: privateProcedure
-    .input(z.object({ todoId: z.string(), newTitle: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const todo = await ctx.prisma.todo.findUnique({
-        where: { id: input.todoId },
-      });
-
-      if (!todo) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Can't update todo. Todo not found.",
-        });
-      } else if (todo.id !== ctx.userId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Not authorized to delete the todo",
-        });
-      } else {
-        const newTodo = await ctx.prisma.todo.update({
-          where: { id: input.todoId },
-          data: { title: input.newTitle },
         });
         return newTodo;
       }
