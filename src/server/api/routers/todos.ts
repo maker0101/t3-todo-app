@@ -1,5 +1,18 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "~/server/api/trpc";
+
+// Is there a way to avoid redeclaring a Typescript type in zod?
+// E.g. By inferring a zod schema from a Typescript type
+// I would like to take a type from prisma client and refernce it directly via something like z.infer(TypescriptType)
+const todoSchema = z.object({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  title: z.string(),
+  userId: z.string(),
+  isDone: z.boolean(),
+});
 
 export const todosRouter = createTRPCRouter({
   getAll: privateProcedure.query(({ ctx }) => {
@@ -28,12 +41,78 @@ export const todosRouter = createTRPCRouter({
       });
       return todo;
     }),
-  // delete: privateProcedure.input(todoId: z.string()).mutation(async({ctx, input}) => {
-  //   const todo = ctx.prisma.todo.delete({
-  //     where: {
-  //       id: input.todoId,
-  //       userId: ctx.userId,
-  //     }
-  //   })
-  // })
+  update: privateProcedure
+    .input(z.object({ todoId: z.string(), newTodo: todoSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const todo = await ctx.prisma.todo.findUnique({
+        where: { id: input.todoId },
+      });
+
+      if (!todo) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Can't update todo. Todo not found.",
+        });
+      } else if (todo.id !== ctx.userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authorized to delete the todo",
+        });
+      } else {
+        const newTodo = await ctx.prisma.todo.update({
+          where: { id: input.todoId },
+          data: { title: input.newTodo.title, isDone: input.newTodo.isDone },
+        });
+        return newTodo;
+      }
+    }),
+  updateTitle: privateProcedure
+    .input(z.object({ todoId: z.string(), newTitle: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const todo = await ctx.prisma.todo.findUnique({
+        where: { id: input.todoId },
+      });
+
+      if (!todo) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Can't update todo. Todo not found.",
+        });
+      } else if (todo.id !== ctx.userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authorized to delete the todo",
+        });
+      } else {
+        const newTodo = await ctx.prisma.todo.update({
+          where: { id: input.todoId },
+          data: { title: input.newTitle },
+        });
+        return newTodo;
+      }
+    }),
+  delete: privateProcedure
+    .input(z.object({ todoId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Find the todo with the specified todoId
+      const todo = await ctx.prisma.todo.findUnique({
+        where: { id: input.todoId },
+      });
+
+      // If the todo is found and belongs to the user, delete it
+      if (!todo) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Can't delete todo. Todo not found.",
+        });
+      } else if (todo.userId !== ctx.userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authorized to delete the todo",
+        });
+      } else {
+        await ctx.prisma.todo.delete({ where: { id: input.todoId } });
+        return { success: true };
+      }
+    }),
 });

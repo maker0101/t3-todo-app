@@ -23,6 +23,11 @@ const Home: NextPage = () => {
     api.todos.getAll.useQuery();
 
   // Delete todo
+  const { mutate: deleteTodo } = api.todos.delete.useMutation({
+    onSuccess: () => {
+      void ctx.todos.getAll.invalidate();
+    },
+  });
 
   // Add todos
   const ctx = api.useContext();
@@ -33,6 +38,9 @@ const Home: NextPage = () => {
         void ctx.todos.getAll.invalidate();
       },
     });
+
+  // Update todos
+  const { mutate: updateTodo } = api.todos.update.useMutation();
 
   const [showAddButton, setShowAddButton] = useState(false);
 
@@ -77,7 +85,12 @@ const Home: NextPage = () => {
                   >
                     {/** Display list of todos */}
                     {todos.map((todo) => (
-                      <TodoItem key={todo.id} todo={todo} />
+                      <TodoItem
+                        key={todo.id}
+                        todo={todo}
+                        deleteTodo={deleteTodo}
+                        updateTodo={updateTodo}
+                      />
                     ))}
 
                     {/** AddTodoWizard */}
@@ -191,15 +204,29 @@ const TodoListError: React.FC<TodoListErrorProps> = (props) => {
  */
 type TodoItemProps = {
   todo: Todo;
+  deleteTodo: ({ todoId }: { todoId: string }) => void;
+  updateTodo: ({ todoId, newTodo }: { todoId: string; newTodo: Todo }) => void;
 };
 
 const TodoItem: React.FC<TodoItemProps> = (props) => {
-  const { todo } = props;
+  const { todo, deleteTodo, updateTodo } = props;
   const [todoState, setTodoState] = useState(todo);
+
+  // TODO: Not working. Why?
+  const handleUpdateTodo = (
+    e: FormEvent<HTMLFormElement>,
+    todoId: string,
+    newTodo: Todo
+  ) => {
+    e.preventDefault();
+    updateTodo({ todoId, newTodo });
+  };
+
   return (
-    <button
+    <form
       className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
       key={todo.id}
+      onSubmit={(e) => handleUpdateTodo(e, todo.id, todoState)}
     >
       <input
         id={`checkbox-${todo.id}`}
@@ -215,8 +242,11 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
         onChange={(e) => setTodoState({ ...todoState, title: e.target.value })}
         className="w-full cursor-pointer select-none truncate bg-transparent text-gray-300 outline-none focus:text-gray-100"
       />
-      <TrashIcon className="invisible h-6 w-6 text-gray-700 hover:text-gray-400 group-hover:visible" />
-    </button>
+      <TrashIcon
+        onClick={() => deleteTodo({ todoId: todo.id })}
+        className="invisible h-6 w-6 text-gray-700 hover:text-gray-400 group-hover:visible"
+      />
+    </form>
   );
 };
 
