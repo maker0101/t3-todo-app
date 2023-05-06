@@ -38,7 +38,6 @@ const Home: NextPage = () => {
   const { mutate: addTodo, isLoading: isAddingTodo } =
     api.todos.create.useMutation({
       onSuccess: () => {
-        // TODO: Better way to do this without void?
         void ctx.todos.getAll.invalidate();
       },
       onError: () => {
@@ -48,6 +47,9 @@ const Home: NextPage = () => {
 
   // Update todos
   const { mutate: updateTodo } = api.todos.update.useMutation({
+    onSuccess: () => {
+      void ctx.todos.getAll.invalidate();
+    },
     onError: (e) => {
       const errorMessage = e.message;
       if (errorMessage) {
@@ -90,7 +92,7 @@ const Home: NextPage = () => {
               <SignOutButton />
             </nav>
             {/** TodoList */}
-            <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center py-12">
+            <div className="mx-auto flex max-w-lg flex-col justify-center py-12">
               {todos && (
                 <>
                   <h1 className="text-3xl font-bold text-gray-600">Todos</h1>
@@ -227,6 +229,7 @@ type TodoItemProps = {
 const TodoItem: React.FC<TodoItemProps> = (props) => {
   const { todo, deleteTodo, updateTodo } = props;
   const [todoState, setTodoState] = useState(todo);
+  const { id, title, isDone } = todoState;
 
   // Todo: does this belong here? Or outside?
   const handleUpdateTodo = (
@@ -247,25 +250,28 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
   return (
     <form
       className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg bg-gray-900 px-4 hover:bg-gray-800"
-      key={todo.id}
-      onSubmit={(e) => handleUpdateTodo(e, todo.id, todoState)}
+      key={id}
+      onSubmit={(e) => handleUpdateTodo(e, id, todoState)}
+      onBlur={(e) => handleUpdateTodo(e, id, todoState)}
     >
       <input
-        id={`checkbox-${todo.id}`}
+        id={`checkbox-${id}`}
         type="checkbox"
-        checked={todoState.isDone}
+        checked={isDone}
         onChange={(e) =>
           setTodoState({ ...todoState, isDone: e.target.checked })
         }
         className="h-5 w-5 cursor-pointer rounded border-gray-600 bg-transparent focus:ring-transparent"
       />
       <input
-        value={todoState.title}
+        value={title}
         onChange={(e) => setTodoState({ ...todoState, title: e.target.value })}
-        className="w-full cursor-pointer select-none truncate bg-transparent text-gray-300 outline-none focus:text-gray-100"
+        className={`w-full cursor-pointer select-none truncate bg-transparent  outline-none focus:text-gray-100 ${
+          isDone ? "text-gray-600 line-through" : "text-gray-300"
+        }`}
       />
       <TrashIcon
-        onClick={() => deleteTodo({ todoId: todo.id })}
+        onClick={() => deleteTodo({ todoId: id })}
         className="invisible h-6 w-6 text-gray-700 hover:text-gray-400 group-hover:visible"
       />
     </form>
