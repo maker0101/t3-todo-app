@@ -45,17 +45,6 @@ const Home: NextPage = () => {
       },
     });
 
-  const [showAddButton, setShowAddButton] = useState(false);
-
-  const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
-
-  const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log(newTodo);
-    addTodo(newTodo);
-    setNewTodo(INITIAL_NEW_TODO);
-  };
-
   // Update todos
   const { mutate: updateTodo } = api.todos.update.useMutation({
     onSuccess: () => {
@@ -71,6 +60,7 @@ const Home: NextPage = () => {
     },
   });
 
+  // Toggle todo isDone
   const { mutate: toggleDone } = api.todos.toggleDone.useMutation({
     onSuccess: () => {
       void ctx.todos.getAll.invalidate();
@@ -132,42 +122,7 @@ const Home: NextPage = () => {
                       ))}
 
                     {/** AddTodoWizard */}
-                    <form
-                      className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg px-4 hover:bg-gray-950"
-                      onSubmit={(e) => handleAddTodo(e)}
-                    >
-                      <input
-                        id={`checkbox-new-todo`}
-                        type="checkbox"
-                        checked={newTodo.isDone}
-                        onChange={(e) =>
-                          setNewTodo({ ...newTodo, isDone: e.target.checked })
-                        }
-                        onFocus={() => setShowAddButton(true)}
-                        onBlur={() => setShowAddButton(false)}
-                        disabled={isAddingTodo}
-                        className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent group-hover:border-gray-700"
-                      />
-                      <input
-                        className="w-full cursor-pointer select-none truncate border-transparent bg-transparent text-gray-100 outline-none placeholder:text-gray-700 focus:border-transparent focus:ring-transparent group-hover:placeholder:text-gray-600"
-                        type="text"
-                        value={newTodo.title}
-                        onChange={(e) =>
-                          setNewTodo({ ...newTodo, title: e.target.value })
-                        }
-                        onFocus={() => setShowAddButton(true)}
-                        onBlur={() => setShowAddButton(false)}
-                        disabled={isAddingTodo}
-                        placeholder="Add Todo"
-                      />
-                      <input
-                        type="submit"
-                        value="Add"
-                        className={`${
-                          showAddButton ? "visible" : "invisible"
-                        } cursor-pointer rounded bg-[#2563EB] px-2 py-1 duration-100 ease-in-out`}
-                      />
-                    </form>
+                    <AddTodoWizard addTodo={addTodo} isLoading={isAddingTodo} />
                   </div>
                 </>
               )}
@@ -188,6 +143,62 @@ const Home: NextPage = () => {
 };
 
 export default Home;
+
+/**
+ * AddTodoWizard
+ */
+type AddTodoWizardProps = {
+  isLoading: boolean;
+  addTodo: (newTodo: { title: string; isDone: boolean }) => void;
+};
+
+const AddTodoWizard: React.FC<AddTodoWizardProps> = (props) => {
+  const { addTodo, isLoading } = props;
+  const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
+  const [showAddButton, setShowAddButton] = useState(false);
+
+  const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    addTodo(newTodo);
+    setNewTodo(INITIAL_NEW_TODO);
+  };
+
+  return (
+    <form
+      id="add-todo-form"
+      className="group flex min-h-[48px] w-full cursor-pointer items-center gap-4 rounded-lg px-4 hover:bg-gray-950"
+      onSubmit={(e) => handleAddTodo(e)}
+    >
+      <input
+        id={`checkbox-new-todo`}
+        type="checkbox"
+        checked={newTodo.isDone}
+        onChange={(e) => setNewTodo({ ...newTodo, isDone: e.target.checked })}
+        onFocus={() => setShowAddButton(true)}
+        onBlur={() => setShowAddButton(false)}
+        disabled={isLoading}
+        className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent group-hover:border-gray-700"
+      />
+      <input
+        className="w-full cursor-pointer select-none truncate border-transparent bg-transparent text-gray-100 outline-none placeholder:text-gray-700 focus:border-transparent focus:ring-transparent group-hover:placeholder:text-gray-600"
+        type="text"
+        value={newTodo.title}
+        onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+        onFocus={() => setShowAddButton(true)}
+        onBlur={() => setShowAddButton(false)}
+        disabled={isLoading}
+        placeholder="Add Todo"
+      />
+      <input
+        type="submit"
+        value="Add"
+        className={`${
+          showAddButton ? "visible" : "invisible"
+        } cursor-pointer rounded bg-[#2563EB] px-2 py-1 duration-100 ease-in-out`}
+      />
+    </form>
+  );
+};
 
 /**
  * TodoListLoading
