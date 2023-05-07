@@ -45,6 +45,17 @@ const Home: NextPage = () => {
       },
     });
 
+  const [showAddButton, setShowAddButton] = useState(false);
+
+  const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
+
+  const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(newTodo);
+    addTodo(newTodo);
+    setNewTodo(INITIAL_NEW_TODO);
+  };
+
   // Update todos
   const { mutate: updateTodo } = api.todos.update.useMutation({
     onSuccess: () => {
@@ -60,15 +71,19 @@ const Home: NextPage = () => {
     },
   });
 
-  const [showAddButton, setShowAddButton] = useState(false);
-
-  const [newTodo, setNewTodo] = useState(INITIAL_NEW_TODO);
-
-  const handleAddTodo = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    addTodo(newTodo);
-    setNewTodo(INITIAL_NEW_TODO);
-  };
+  const { mutate: toggleDone } = api.todos.toggleDone.useMutation({
+    onSuccess: () => {
+      void ctx.todos.getAll.invalidate();
+    },
+    onError: (e) => {
+      const errorMessage = e.message;
+      if (errorMessage) {
+        toast.error(errorMessage);
+      } else {
+        toast.error("Failed to toggle done. Please try again.");
+      }
+    },
+  });
 
   return (
     <>
@@ -102,14 +117,19 @@ const Home: NextPage = () => {
                     ref={animationParent}
                   >
                     {/** Display list of todos */}
-                    {todos.map((todo) => (
-                      <TodoItem
-                        key={todo.id}
-                        todo={todo}
-                        deleteTodo={deleteTodo}
-                        updateTodo={updateTodo}
-                      />
-                    ))}
+                    {todos
+                      .sort((a, b) =>
+                        a.isDone === b.isDone ? 0 : a.isDone ? 1 : -1
+                      )
+                      .map((todo) => (
+                        <TodoItem
+                          key={todo.id}
+                          todo={todo}
+                          deleteTodo={deleteTodo}
+                          updateTodo={updateTodo}
+                          toggleDone={toggleDone}
+                        />
+                      ))}
 
                     {/** AddTodoWizard */}
                     <form
@@ -123,6 +143,8 @@ const Home: NextPage = () => {
                         onChange={(e) =>
                           setNewTodo({ ...newTodo, isDone: e.target.checked })
                         }
+                        onFocus={() => setShowAddButton(true)}
+                        onBlur={() => setShowAddButton(false)}
                         disabled={isAddingTodo}
                         className="h-5 w-5 cursor-pointer rounded border-gray-800 bg-transparent focus:ring-transparent group-hover:border-gray-700"
                       />
@@ -224,10 +246,11 @@ type TodoItemProps = {
   todo: Todo;
   deleteTodo: ({ todoId }: { todoId: string }) => void;
   updateTodo: ({ todoId, newTodo }: { todoId: string; newTodo: Todo }) => void;
+  toggleDone: ({ todoId, isDone }: { todoId: string; isDone: boolean }) => void;
 };
 
 const TodoItem: React.FC<TodoItemProps> = (props) => {
-  const { todo, deleteTodo, updateTodo } = props;
+  const { todo, deleteTodo, updateTodo, toggleDone } = props;
   const [todoState, setTodoState] = useState(todo);
   const { id, title, isDone } = todoState;
 
@@ -258,9 +281,10 @@ const TodoItem: React.FC<TodoItemProps> = (props) => {
         id={`checkbox-${id}`}
         type="checkbox"
         checked={isDone}
-        onChange={(e) =>
-          setTodoState({ ...todoState, isDone: e.target.checked })
-        }
+        onChange={(e) => {
+          setTodoState({ ...todoState, isDone: e.target.checked });
+          toggleDone({ todoId: id, isDone: e.target.checked });
+        }}
         className="h-5 w-5 cursor-pointer rounded border-gray-600 bg-transparent focus:ring-transparent"
       />
       <input

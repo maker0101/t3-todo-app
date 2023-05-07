@@ -29,6 +29,7 @@ export const todosRouter = createTRPCRouter({
     .input(
       z.object({
         title: z.string().min(1).max(280),
+        isDone: z.boolean(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -37,6 +38,7 @@ export const todosRouter = createTRPCRouter({
         data: {
           userId,
           title: input.title,
+          isDone: input.isDone,
         },
       });
       return todo;
@@ -62,6 +64,31 @@ export const todosRouter = createTRPCRouter({
         const newTodo = await ctx.prisma.todo.update({
           where: { id: input.todoId },
           data: { title: input.newTodo.title, isDone: input.newTodo.isDone },
+        });
+        return newTodo;
+      }
+    }),
+  toggleDone: privateProcedure
+    .input(z.object({ todoId: z.string(), isDone: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const todo = await ctx.prisma.todo.findUnique({
+        where: { id: input.todoId },
+      });
+
+      if (!todo) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Can't toggle done. Todo not found.",
+        });
+      } else if (todo.userId !== ctx.userId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not authorized to toggle done",
+        });
+      } else {
+        const newTodo = await ctx.prisma.todo.update({
+          where: { id: input.todoId },
+          data: { isDone: input.isDone },
         });
         return newTodo;
       }
